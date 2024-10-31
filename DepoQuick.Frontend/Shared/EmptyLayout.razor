@@ -1,0 +1,21 @@
+﻿@using DepoQuick.Backend.Services
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+<PageTitle>DepoQuick</PageTitle>
+
+<main>
+   @Body
+</main>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (AuthService.AuthedUser is not null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+}

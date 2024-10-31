@@ -1,0 +1,88 @@
+@page "/users"
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Auth
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<header>
+    <h1>Register User</h1>
+</header>
+<main>
+    <EditForm Model="AddUserFormDto" OnValidSubmit="Submit">
+        <DataAnnotationsValidator/>
+        <div>
+            <label>
+                <span>
+                    Name
+                </span>
+                <InputText @bind-Value="AddUserFormDto!.Name" class="form-control"/>
+                <ValidationMessage For="() => AddUserFormDto!.Name"/>
+            </label>
+
+            <label>
+                <span>
+                    Email
+                </span>
+                <InputText @bind-Value="AddUserFormDto!.Email"  class="form-control"/>
+                <ValidationMessage For="() => AddUserFormDto!.Email"/>
+            </label>
+
+            <label>
+                <span>
+                    Password
+                </span>
+                <InputText @bind-Value="AddUserFormDto!.Password" type="password"  class="form-control"/>
+                <ValidationMessage For="() => AddUserFormDto!.Password"/>
+            </label>
+
+            <label>
+                <span>
+                    Confirm Password
+                </span>
+                <InputText @bind-Value="AddUserFormDto!.Confirmation" type="password"  class="form-control"/>
+                <ValidationMessage For="() => AddUserFormDto!.Confirmation"/>
+            </label>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <p class="error-message">@ErrorMessage</p>
+        }
+        <button type="submit">Register New User</button> <span class="success-message">@SuccessMessage</span>
+    </EditForm>
+</main>
+
+@code {
+    public SignUpDto? AddUserFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser is not null && !AuthService.AuthedUser.IsAdmin)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        
+        AddUserFormDto ??= new SignUpDto();
+    }
+
+    private void Submit()
+    {
+        try
+        {
+            if (AddUserFormDto is null)
+                throw new InvalidOperationException("Form data is null");
+
+            AuthService.AddUser(AddUserFormDto);
+
+            SuccessMessage = $"User {AddUserFormDto.Name} has been registered successfully";
+
+            AddUserFormDto = new SignUpDto();
+        }
+        catch (ArgumentException e)
+        {
+            SuccessMessage = null;
+            ErrorMessage = e.Message;
+        }
+    }
+}

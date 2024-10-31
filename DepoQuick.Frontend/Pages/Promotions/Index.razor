@@ -1,0 +1,117 @@
+@page "/promotions"
+@using DepoQuick.Models
+@using DepoQuick.Backend.Services
+@inject PromotionService PromotionService
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<header>
+    <h1>Promotions</h1>
+    <a href="/promotions/new">
+        Create new
+    </a>
+</header>
+<main>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Label</th>
+            <th>Percentage</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            @if (AuthService.AuthedUser is not null && AuthService.AuthedUser!.IsAdmin)
+            {
+                <th class="small-centered">Actions</th>
+            }
+        </tr>
+        </thead>
+        <tbody>
+
+        @if (_promotions == null)
+        {
+            <tr class="status-message">
+                <td colspan="7">Loading...</td>
+            </tr>
+        }
+        else if (_promotions.Count == 0)
+        {
+            <tr>
+                <td colspan="7" class="status-message">No promotions found</td>
+            </tr>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger">
+                    @_errorMessage
+                    <button @onclick="ClearErrorMessage">Ok</button>
+                </div>
+            }
+            @foreach (var promotion in _promotions)
+            {
+                <tr>
+                    <td>@promotion.PromotionId</td>
+                    <td>@promotion.Label</td>
+                    <td>@promotion.DiscountPercentage</td>
+                    <td>@promotion.StartDate</td>
+                    <td>@promotion.EndDate</td>
+                    @if (AuthService.AuthedUser is not null && AuthService.AuthedUser!.IsAdmin)
+                    {
+                        <td class="small-centered">
+                            
+                            <a href="/promotions/@promotion.PromotionId/edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" id="pencil">
+                                  <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
+                                </svg>
+                            </a>
+                            
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" @onclick=@(() => OnDeletePromotion(promotion.PromotionId)) id="trash">
+                                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"/>
+                            </svg>
+                            
+                        </td>
+                    }
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</main>
+
+@code {
+    private List<Promotion>? _promotions;
+    private string _errorMessage = string.Empty;
+
+    private void OnDeletePromotion(int promotionId)
+    {
+        if (AuthService.AuthedUser!.IsAdmin)
+        {
+            try
+            {
+                PromotionService.DeletePromotion(promotionId);
+                _promotions = PromotionService.GetAll();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _errorMessage = "Cannot delete warehouse with active reservations";
+            }
+        }
+    }
+    
+    private void ClearErrorMessage()
+    {
+        _errorMessage = string.Empty;
+    }
+    
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser is not null && !AuthService.AuthedUser.IsAdmin)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        
+        _promotions = PromotionService.GetAll();
+    }
+}

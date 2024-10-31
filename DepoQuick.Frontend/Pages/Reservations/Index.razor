@@ -1,0 +1,287 @@
+@page "/reservations"
+@using DepoQuick.Models
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Reservations
+@inject ReservationService ReservationService
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<header>
+    <h1>Reservations</h1>
+    <div>
+    @if (AuthService.AuthedUser is not null && AuthService.AuthedUser.IsAdmin){
+        <button @onclick="() => ExportData(new TSVExportStrategy())">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3"/>
+            </svg>
+            <span>
+                TSV
+            </span>
+        </button>
+        <button @onclick="() => ExportData(new CSVExportStrategy())">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3"/>
+            </svg>
+            <span>
+                CSV
+            </span>
+        </button>
+    }
+        <a href="/reservations/new">
+            Create new
+        </a>
+    </div>
+</header>
+<main>
+    <table>
+        <thead>
+        <tr>
+            <th class="small-col">ID</th>
+            <th>Start date</th>
+            <th>End date</th>
+            <th>Warehouse</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Payment status</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        @if (_reservations == null)
+        {
+            <tr class="status-message">
+                <td colspan="7">Loading...</td>
+            </tr>
+        }
+        else if (_reservations.Count == 0)
+        {
+            <tr>
+                <td colspan="7" class="status-message">No reservations found</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var reservation in _reservations)
+            {
+                <tr class=@(AuthService.AuthedUser!.IsAdmin && reservation.Status == ReservationStatus.Pending ? "data-row" : "")
+                    onclick=@(() => { if (AuthService.AuthedUser!.IsAdmin && reservation.Status == ReservationStatus.Pending) OpenApprovalModal(@reservation.ReservationId); })>
+                    <td class="small-col">@reservation.ReservationId</td>
+                    <td>@reservation.StartDate</td>
+                    <td>@reservation.EndDate</td>
+                    <td>@reservation.Warehouse</td>
+                    <td>@reservation.Price.ToString("C2")</td>
+                    <td class="@reservation.Status">@reservation.Status</td>
+                    <td class="@reservation.PaymentStatus">
+                        @if (reservation.PaymentStatus == PaymentStatus.Reserved)
+                        {
+                            <span>Payment Reserved</span>
+                        }
+                        else if (reservation.PaymentStatus == PaymentStatus.Captured)
+                        {
+                            <span>Payment Captured</span>
+                        }
+                        else if (reservation.ClientId == AuthService.AuthedUser!.UserId && reservation.PaymentStatus is null)
+                        {
+                            <button @onclick="() => OnPayment(reservation.ReservationId)">Pay</button>
+                        }
+                        else
+                        {
+                            <span>No payment</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+    <br/>
+    <div class="side-by-side">
+        <div>
+            <h2>✅ Approved Reservations</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th class="small-col">ID</th>
+                    <th>Warehouse</th>
+                    <th>Price</th>
+                </tr>
+                </thead>
+                <tbody>
+                @if (_approvedReservations == null)
+                {
+                    <tr class="status-message">
+                        <td colspan="7">Loading...</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var reservation in _approvedReservations)
+                    {
+                        <tr>
+                            <td class="small-col">@reservation.ReservationId</td>
+                            <td>(@reservation.Warehouse!.WarehouseId) @reservation.Warehouse!.Size - @reservation.Warehouse!.Zone - @(reservation.Warehouse!.IsHeated ? "Heated" : "Not Heated")</td>
+                            <td>@reservation.Price.ToString("C2")</td>
+                        </tr>
+                    }
+
+                    @if (_approvedReservations.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="status-message">No rejections found</td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+
+        </div>
+
+        <div>
+            <h2>❌ Rejected Reservations</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th class="small-col">ID</th>
+                    <th>Rejection note</th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+                @if (_rejectedReservations == null)
+                {
+                    <tr class="status-message">
+                        <td colspan="7">Loading...</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var reservation in _rejectedReservations)
+                    {
+                        <tr>
+                            <td class="small-col">@reservation.ReservationId</td>
+                            <td>@reservation.RejectionNote</td>
+                        </tr>
+                    }
+
+                    @if (_rejectedReservations.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="status-message">No rejections found</td>
+                        </tr>
+                    }
+                }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+@if (ShowApprovalModal)
+{
+    <div class="modal-bg">
+        <div class="modal-box">
+            <EditForm Model="UpdateReservationModalDto" OnValidSubmit="OnApprove">
+                <fieldset>
+                    <legend>
+                        Approve?
+                    </legend>
+                    <div class="form-check form-check-inline form-switch form-switch-md">
+                        <InputCheckbox @bind-Value="UpdateReservationModalDto!.IsApproved" class="form-check-input"/>
+                        <ValidationMessage For="() => UpdateReservationModalDto!.IsApproved"/>
+                    </div>
+                </fieldset>
+
+                @if (!UpdateReservationModalDto.IsApproved)
+                {
+                    <fieldset>
+                        <legend>
+                            Rejection Note
+                        </legend>
+                        <div>
+                            <InputTextArea @bind-Value="UpdateReservationModalDto!.RejectionNote" class="full-size"/>
+                            <ValidationMessage For="() => UpdateReservationModalDto!.RejectionNote"/>
+                        </div>
+                    </fieldset>
+                }
+                <button type="submit">Submit</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private UpdateReservationDto? UpdateReservationModalDto { get; set; }
+    private List<Reservation>? _reservations;
+    private List<Reservation>? _rejectedReservations;
+    private List<Reservation>? _approvedReservations;
+    private bool hasRejections = false;
+    private bool ShowApprovalModal { get; set; }
+    private int? SelectedReservationId { get; set; }
+
+    private void ExportData(IExportStrategy<Reservation> strategy)
+    {
+        var reservationExporter = new ReservationExporter(strategy);
+        var resultBase64 = reservationExporter.ExportReservations(_reservations);
+        NavigationManager.NavigateTo(resultBase64);
+    }
+
+    private void OpenApprovalModal(int reservationId)
+    {
+        ShowApprovalModal = true;
+        SelectedReservationId = reservationId;
+        StateHasChanged();
+    }
+
+    private void OnApprove()
+    {
+        if (SelectedReservationId is null)
+            throw new InvalidOperationException("No reservation selected");
+
+        if (UpdateReservationModalDto is null)
+            throw new InvalidOperationException("Update form is empty");
+
+        // Update the reservation
+        ReservationService.UpdateReservationStatus((int)SelectedReservationId, UpdateReservationModalDto);
+
+        FetchReservations();
+
+        ShowApprovalModal = false;
+        StateHasChanged();
+    }
+    
+    private void FetchReservations()
+    {
+        if (AuthService.AuthedUser!.IsAdmin)
+        {
+            _reservations = ReservationService.GetAll();
+        }
+        else
+        {
+            var clientId = AuthService.AuthedUser.UserId;
+            _reservations = ReservationService.GetAllClientReservations(clientId);
+        }
+        _reservations.Reverse();
+        _rejectedReservations = _reservations.FindAll((r) => r.Status == ReservationStatus.Rejected);
+        _approvedReservations = _reservations.FindAll((r) => r.Status == ReservationStatus.Approved);
+    }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser == null)
+            return;
+
+        UpdateReservationModalDto = new UpdateReservationDto
+        {
+            IsApproved = true
+        };
+
+        FetchReservations();
+    }
+
+    void OnPayment(int reservationId)
+    {
+        ReservationService.UpdateReservationPaymentStatus(reservationId, PaymentStatus.Reserved);
+        FetchReservations();
+    }
+}

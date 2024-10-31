@@ -1,0 +1,137 @@
+
+@page "/warehouses/new"
+@using DepoQuick.Models
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Warehouses
+@inject WarehouseService WarehouseService
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+<header>
+    <h1>New Warehouse</h1>
+    <a href="/warehouses">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 1em; height: 1em">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+        </svg>
+        Go Back
+    </a>
+</header>
+<main>
+    <EditForm Model="AddWarehouseFormDto" OnValidSubmit="Submit">
+        <DataAnnotationsValidator/>
+        <fieldset class="form-group">
+            <legend>
+                Label
+            </legend>
+            <InputText @bind-Value="AddWarehouseFormDto!.Name" class="form-control"/>
+            <ValidationMessage For="() => AddWarehouseFormDto!.Name" />
+        </fieldset>
+        <fieldset>
+            <legend>
+                Zone
+            </legend>
+            <InputSelect @bind-Value="@AddWarehouseFormDto!.Zone" class="form-select" >
+                @foreach (var zone in Enum.GetValues<WarehouseZone>())
+                {
+                    
+                    <option value="@zone">@zone</option>
+                }
+            </InputSelect>
+                           
+            <ValidationMessage For="@(() => AddWarehouseFormDto.Zone)" />
+        </fieldset>
+        
+        <div>
+            <fieldset>
+                <legend>
+                    Size
+                </legend>
+                <div class="radio-group">
+                    <InputRadioGroup @bind-Value="AddWarehouseFormDto.Size">
+                        @foreach (var size in Enum.GetValues<WarehouseSize>())
+                        {
+                            <div>
+                                <label for=@size.ToString() class="btn @(AddWarehouseFormDto.Size == size ? "btn-secondary" : "btn-outline-secondary")">
+                                    @size.ToString().Substring(0, 1).ToUpper()
+                                </label>
+                                <InputRadio id=@size.ToString() Value=@size class="btn-check"/>
+                            </div>
+                        }
+                    </InputRadioGroup>
+                </div>
+                           
+                <ValidationMessage For="@(() => AddWarehouseFormDto.Size)" />
+            </fieldset>
+            <fieldset>
+                <legend>
+                    Is Heated
+                </legend>
+                <div class="form-check form-check-inline form-switch form-switch-md">
+                    <InputCheckbox @bind-Value="AddWarehouseFormDto!.IsHeated" class="form-check-input" id="is-heated"/>
+                    <ValidationMessage For="() => AddWarehouseFormDto.IsHeated"/>
+                </div>
+            </fieldset>
+            <fieldset class="form-group">
+                <legend>
+                    Available From
+                </legend>
+                <InputDate @bind-Value="AddWarehouseFormDto!.AvailableFrom" class="form-control"/>
+                <ValidationMessage For="() => AddWarehouseFormDto!.AvailableFrom"/>
+            </fieldset>
+
+            <fieldset class="form-group">
+                <legend>
+                    Available To
+                </legend>
+                <InputDate @bind-Value="AddWarehouseFormDto!.AvailableTo" class="form-control"/>
+                <ValidationMessage For="() => AddWarehouseFormDto!.AvailableTo"/>
+            </fieldset>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <p class="error-message">@ErrorMessage</p>
+        }
+            <button type="submit">Create</button>
+    </EditForm>
+</main>
+
+@code {
+    private AddWarehouseDto? AddWarehouseFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser is not null && !AuthService.AuthedUser.IsAdmin)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        
+        AddWarehouseFormDto = new AddWarehouseDto
+        {
+            // Set the default values
+            Zone = WarehouseZone.A,
+            Size = WarehouseSize.Small,
+            IsHeated = false,
+            AvailableFrom = DateTime.Today,
+            AvailableTo = DateTime.Today.AddDays(1)
+        };
+    }
+
+    private void Submit()
+    {
+        try
+        {
+            if (AddWarehouseFormDto is null)
+                throw new InvalidOperationException("Form data is null");
+
+            WarehouseService.AddWarehouse(AddWarehouseFormDto);
+            
+            // Redirect to the home page
+            NavigationManager.NavigateTo("/warehouses");
+        }
+        catch (ArgumentException e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+}

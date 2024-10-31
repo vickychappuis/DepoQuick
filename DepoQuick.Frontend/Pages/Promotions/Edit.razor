@@ -1,0 +1,132 @@
+@page "/promotions/{PromotionId}/edit"
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Promotions
+@using DepoQuick.Models
+@inject PromotionService PromotionService
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+@if (Promotion != null)
+{
+    <header>
+        <h1>Promotion @Promotion.PromotionId: Edit</h1>
+        <a href="/promotions">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 1em; height: 1em">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+            </svg>
+            Go Back
+        </a>
+    </header>
+    <main>
+        <EditForm Model="UpdatePromotionFormDto" OnValidSubmit="Submit" class="new-form">
+            <DataAnnotationsValidator/>
+            <div class="field-row">
+                <fieldset class="form-group">
+                    <legend>
+                        Label
+                    </legend>
+                    <InputText @bind-Value="UpdatePromotionFormDto!.Label" class="form-control"/>
+                    <ValidationMessage For="() => UpdatePromotionFormDto!.Label" />
+                </fieldset>
+
+                <fieldset class="form-group">
+                    <legend>
+                        Discount Percentage
+                    </legend>
+                    <InputNumber @bind-Value="UpdatePromotionFormDto!.DiscountPercentage" class="form-control"/>
+                    <ValidationMessage For="() => UpdatePromotionFormDto!.DiscountPercentage" />
+                </fieldset>
+            </div>
+            <div class="field-row">
+                <fieldset class="form-group">
+                    <legend>
+                        Start Date
+                    </legend>
+                    <InputDate @bind-Value="UpdatePromotionFormDto!.StartDate" class="form-control"/>
+                    <ValidationMessage For="() => UpdatePromotionFormDto!.StartDate" />
+                </fieldset>
+
+                <fieldset class="form-group">
+                    <legend>
+                        End Date
+                    </legend>
+                    <InputDate @bind-Value="UpdatePromotionFormDto!.EndDate" class="form-control"/>
+                    <ValidationMessage For="() => UpdatePromotionFormDto!.EndDate"/>
+                </fieldset>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+            <p class="error-message">@ErrorMessage</p>
+            }
+            <div>
+                <button type="submit">Confirm Edit</button>
+            </div>
+        </EditForm>
+    </main>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+
+
+@code {
+    [Parameter]
+    public string? PromotionId { get; set; } 
+    
+    private Promotion? Promotion { get; set; }
+    private AddPromotionDto? UpdatePromotionFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser is not null && !AuthService.AuthedUser.IsAdmin)
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        try
+        {
+            if (string.IsNullOrEmpty(PromotionId))
+                throw new InvalidOperationException("Promotion ID is not provided");
+            
+            int promotionId = int.Parse(PromotionId);
+
+            Promotion = PromotionService.Get(promotionId) ?? throw new InvalidOperationException("Promotion not found");
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/promotions");
+            return;
+        }
+        
+        UpdatePromotionFormDto = new AddPromotionDto
+        {
+            // Set the default values
+            Label = Promotion!.Label,
+            DiscountPercentage = Promotion!.DiscountPercentage,
+            StartDate = Promotion!.StartDate,
+            EndDate = Promotion!.EndDate,
+        };
+    }
+
+    private void Submit()
+        {
+            try
+            {
+                if (UpdatePromotionFormDto is null)
+                    throw new InvalidOperationException("Form data is null");
+
+                PromotionService.UpdatePromotion(Promotion.PromotionId, UpdatePromotionFormDto);
+
+                // Redirect to the list page
+                NavigationManager.NavigateTo("/promotions");
+            }
+            catch (ArgumentException e)
+            {
+                ErrorMessage = e.Message;
+            }
+        } 
+}

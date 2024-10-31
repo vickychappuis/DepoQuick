@@ -1,0 +1,168 @@
+@page "/reservations/new"
+@using DepoQuick.Models
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Reservations
+@inject ReservationService ReservationService
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+<header>
+    <h1>New Reservation</h1>
+    <a href="/reservations">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 1em; height: 1em">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+        </svg>
+        Go Back
+    </a>
+</header>
+<main>
+    @if (AddReservationFormDto is not null)
+    {
+        <EditForm Model="AddReservationFormDto" OnValidSubmit="Submit" class="new-form">
+            <DataAnnotationsValidator/>
+            <div class="field-row">
+                <fieldset class="form-group">
+                    <legend>
+                        Start date
+                    </legend>
+                    <InputDate @bind-Value="StartDate" class="form-control"/>
+                    <ValidationMessage For="() => AddReservationFormDto!.StartDate"/>
+                </fieldset>
+
+                <fieldset class="form-group">
+                    <legend>
+                        End date
+                    </legend>
+                    <InputDate @bind-Value="EndDate" class="form-control"/>
+                    <ValidationMessage For="() => AddReservationFormDto!.EndDate"/>
+                </fieldset>
+            </div>
+
+            @if (Warehouses is not null && Warehouses.Count > 0)
+            {
+                <div class="field-row">
+                    <fieldset>
+                        <legend>
+                            Warehouse
+                        </legend>
+                        <InputSelect @bind-Value="@AddReservationFormDto!.WarehouseId" class="form-select">
+                            @foreach (var warehouse in Warehouses)
+                            {
+                                <option value="@warehouse.WarehouseId">@warehouse</option>
+                            }
+                        </InputSelect>
+
+                        <ValidationMessage For="@(() => AddReservationFormDto.WarehouseId)"/>
+                    </fieldset>
+                </div>
+            }
+            else if (Warehouses is null)
+            {
+                <strong>Loading...</strong>
+            }
+            else
+            {
+                <div class="space-x">
+                    <strong>No warehouses available in the dates specified</strong>
+                    @if (AuthService.AuthedUser is not null && AuthService.AuthedUser.IsAdmin)
+                    {
+                        <a href="/warehouses/new">Add one to continue</a>
+                    }
+                </div>
+            }
+            @if (ErrorMessage is not null)
+            {
+                <div class="error-message">
+                    <strong>@ErrorMessage</strong>
+                </div>
+            }
+            <button disabled=@(Warehouses is null || Warehouses.Count == 0) type="submit">Submit</button>
+        </EditForm>
+    }
+    else
+    {
+        <strong>Loading...</strong>
+    }
+</main>
+
+@code {
+    private DateTime _startDate;
+    private DateTime _endDate;
+    private AddReservationDto? AddReservationFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    private DateTime StartDate
+    {
+        get => _startDate;
+        set
+        {
+            _startDate = value;
+            AddReservationFormDto!.StartDate = value;
+            OnChangeDates();
+        }
+    }
+
+    private DateTime EndDate
+    {
+        get => _endDate;
+        set
+        {
+            _endDate = value;
+            AddReservationFormDto!.EndDate = value;
+            OnChangeDates();
+        }
+    }
+
+    private List<Warehouse>? Warehouses { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser == null)
+            return;
+
+        AddReservationFormDto = new AddReservationDto
+        {
+            //set the default values
+            StartDate = DateTime.Now,
+            EndDate = DateTime.Now,
+        };
+
+        _startDate = DateTime.Now;
+        _endDate = DateTime.Now;
+
+        Warehouses = ReservationService.GetAvailableWarehouses(AddReservationFormDto.StartDate, AddReservationFormDto.EndDate);
+
+        if (Warehouses.Count > 0)
+            AddReservationFormDto.WarehouseId = Warehouses[0].WarehouseId;
+    }
+
+    private void OnChangeDates()
+    {
+        if (AddReservationFormDto is null)
+            return;
+
+        Warehouses = ReservationService.GetAvailableWarehouses(AddReservationFormDto.StartDate, AddReservationFormDto.EndDate);
+    }
+
+    private void Submit()
+    {
+        try
+        {
+            if (AuthService.AuthedUser is null)
+                throw new InvalidOperationException("AuthedUser is null");
+
+            if (AddReservationFormDto is null)
+                throw new InvalidOperationException("Form Data is null");
+
+            ReservationService.AddReservation(AddReservationFormDto, clientId: AuthService.AuthedUser.UserId);
+
+            // Redirect to the home page
+            NavigationManager.NavigateTo("/reservations");
+        }
+        catch (ArgumentException e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+
+}

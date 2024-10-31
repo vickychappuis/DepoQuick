@@ -1,0 +1,104 @@
+@page "/promotions/new"
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Promotions
+@inject PromotionService PromotionService
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+<header>
+    <h1>New Promotion</h1>
+    <a href="/promotions">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 1em; height: 1em">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+        </svg>
+        Go Back
+    </a>
+</header>
+<main>
+    <EditForm Model="AddPromotionFormDto" OnValidSubmit="Submit" class="new-form">
+        <DataAnnotationsValidator/>
+        <div class="field-row">
+            <fieldset class="form-group">
+                <legend>
+                    Label
+                </legend>
+                <InputText @bind-Value="AddPromotionFormDto!.Label" class="form-control"/>
+                <ValidationMessage For="() => AddPromotionFormDto!.Label" />
+            </fieldset>
+
+            <fieldset class="form-group">
+                <legend>
+                    Discount Percentage
+                </legend>
+                <InputNumber @bind-Value="AddPromotionFormDto!.DiscountPercentage" class="form-control"/>
+                <ValidationMessage For="() => AddPromotionFormDto!.DiscountPercentage" />
+            </fieldset>
+        </div>
+        <div class="field-row">
+            <fieldset class="form-group">
+                <legend>
+                    Start Date
+                </legend>
+                <InputDate @bind-Value="AddPromotionFormDto!.StartDate" class="form-control"/>
+                <ValidationMessage For="() => AddPromotionFormDto!.StartDate" />
+            </fieldset>
+
+            <fieldset class="form-group">
+                <legend>
+                    End Date
+                </legend>
+                <InputDate @bind-Value="AddPromotionFormDto!.EndDate" class="form-control"/>
+                <ValidationMessage For="() => AddPromotionFormDto!.EndDate"/>
+            </fieldset>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+        <p class="error-message">@ErrorMessage</p>
+        }
+        <div>
+            <button type="submit">Add</button>
+        </div>
+    </EditForm>
+</main>
+
+
+
+@code {
+    private AddPromotionDto? AddPromotionFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.AuthedUser is not null && !AuthService.AuthedUser.IsAdmin)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        
+        AddPromotionFormDto = new AddPromotionDto
+        {
+            // Set the default values
+            Label = "",
+            DiscountPercentage = 0,
+            StartDate = DateTime.Now,
+            EndDate = DateTime.Now
+        };
+    }
+
+    private void Submit()
+        {
+            try
+            {
+                if (AddPromotionFormDto is null)
+                    throw new InvalidOperationException("Form data is null");
+
+                PromotionService.AddPromotion(AddPromotionFormDto);
+
+                // Redirect to the list page
+                NavigationManager.NavigateTo("/promotions");
+            }
+            catch (ArgumentException e)
+            {
+                ErrorMessage = e.Message;
+            }
+        } 
+}

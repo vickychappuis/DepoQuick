@@ -1,0 +1,72 @@
+* {
+    color: #0A0A0A;
+}
+
+h1 {
+    font-size: xx-large;
+    margin-bottom: 0.2rem;
+}
+
+header {
+    margin-bottom: 1rem;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #e5e5f7;
+    opacity: 0.8;
+    background-image:  linear-gradient(#594f6f 1px, transparent 1px), linear-gradient(to right, #594f6f 1px, #e5e5f7 1px);
+    background-size: 20px 20px;
+}
+
+article {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    background-color: #F7F7FF;
+    border-radius: 8px;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px;
+}
+
+form label {
+    margin-bottom: 0.8rem;
+    display: flex;
+    flex-direction: column;
+}
+
+form input {
+    border-color: red;
+}
+
+form button {
+    background: #211D2E;
+    color: #F7F7FF;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+form .error-message {
+    color: red;
+    font-weight: 400;
+}
+
+form .footer-buttons {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    margin-top: 1rem;
+}
+
+form .footer-buttons a {
+    color: #211D2E;
+    border: solid 1px #211D2E;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+}

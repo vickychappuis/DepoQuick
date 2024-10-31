@@ -1,0 +1,69 @@
+@layout EmptyLayout
+
+@page "/login"
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Auth
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<main>
+<article>
+    <header>
+        <h1>DepoQuick</h1>
+        <small>Enter your credentials to log in</small>
+    </header>
+    <EditForm Model="LoginFormDto" OnValidSubmit="Submit">
+        <DataAnnotationsValidator/>
+        <div>
+            <label>
+                <span>
+                    Email
+                </span>
+                <InputText @bind-Value="LoginFormDto!.Email"/>
+                <ValidationMessage For="() => LoginFormDto!.Email" />
+            </label>
+
+            <label>
+                <span>
+                    Password
+                </span>
+                <InputText @bind-Value="LoginFormDto!.Password" type="password"/>
+                <ValidationMessage For="() => LoginFormDto!.Password" />
+            </label>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <p class="error-message">@ErrorMessage</p>
+        }
+        <div class="footer-buttons">
+            <button type="submit">Log In</button>
+            <span>or</span>
+            <a href="/signup">Sign Up</a>
+        </div>
+    </EditForm>
+</article>
+</main>
+
+@code {
+    public LoginDto? LoginFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+    
+    protected override void OnInitialized() => LoginFormDto ??= new LoginDto();
+    
+    private void Submit()
+    {
+        try
+        {
+            if (LoginFormDto is null)
+                throw new InvalidOperationException("Form data is null");
+
+            AuthService.Login(LoginFormDto);
+            
+            NavigationManager.NavigateTo("/");
+        }
+        catch (ArgumentException e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+}

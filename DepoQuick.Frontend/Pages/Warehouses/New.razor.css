@@ -1,0 +1,49 @@
+header {
+    margin-bottom: 2rem;
+}
+
+header a {
+    text-decoration: none;
+    color: #211D2E;
+}
+
+form > div  {
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+    display: flex;
+    gap: 2rem;
+}
+
+select {
+    max-width: 12rem;
+}
+
+.radio-group {
+    display: flex;
+    gap: 1rem;
+}
+
+form label {
+    margin-bottom: 0.8rem;
+    display: flex;
+    flex-direction: column;
+}
+
+form input {
+    border-color: red;
+}
+
+form button {
+    background: #211D2E;
+    color: #F7F7FF;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: .5rem;
+}
+
+form .error-message {
+    color: red;
+    font-weight: 400;
+}

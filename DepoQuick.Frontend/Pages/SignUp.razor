@@ -1,0 +1,86 @@
+@layout EmptyLayout
+
+@page "/signup"
+@using DepoQuick.Backend.Services
+@using DepoQuick.Backend.Dtos.Auth
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<main>
+<article>
+    <header>
+        <h1>DepoQuick</h1>
+        <small>Enter your details to sign up</small>
+    </header>
+    <EditForm Model="SignUpFormDto" OnValidSubmit="Submit">
+        <DataAnnotationsValidator/>
+        <div>
+            <label>
+                <span>
+                    Name
+                </span>
+                <InputText @bind-Value="SignUpFormDto!.Name"/>
+                <ValidationMessage For="() => SignUpFormDto!.Name" />
+            </label>
+
+            <label>
+                <span>
+                    Email
+                </span>
+                <InputText @bind-Value="SignUpFormDto!.Email"/>
+                <ValidationMessage For="() => SignUpFormDto!.Email" />
+            </label>
+
+            <label>
+                <span>
+                    Password
+                </span>
+                <InputText @bind-Value="SignUpFormDto!.Password" type="password"/>
+                <ValidationMessage For="() => SignUpFormDto!.Password" />
+            </label>
+
+            <label>
+                <span>
+                    Confirm Password
+                </span>
+                <InputText @bind-Value="SignUpFormDto!.Confirmation" type="password"/>
+                <ValidationMessage For="() => SignUpFormDto!.Confirmation"/>
+            </label>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <p class="error-message">@ErrorMessage</p>
+        }
+        <div class="footer-buttons">
+            <button type="submit">Sign Up</button>
+            <span>or</span>
+            <a href="/login">Log in</a>
+        </div>
+    </EditForm>
+</article>
+</main>
+
+@code {
+    public SignUpDto? SignUpFormDto { get; set; }
+    private string? ErrorMessage { get; set; }
+    
+    protected override void OnInitialized() => SignUpFormDto ??= new SignUpDto();
+    
+    private void Submit()
+    {
+        try
+        {
+            if (SignUpFormDto is null)
+                throw new InvalidOperationException("Form data is null");
+
+            AuthService.Signup(SignUpFormDto);
+            
+            // Redirect to the home page
+            NavigationManager.NavigateTo("/");
+        }
+        catch (ArgumentException e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+}

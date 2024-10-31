@@ -1,0 +1,95 @@
+article {
+    display: flex;
+}
+
+nav {
+    padding: 1em;
+    
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    border-right: .2em solid #594f6f;
+    background-color: #F7F7FF;
+    
+    width: 18%;
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    
+    gap: 2em
+}
+
+nav > .navbar-header {
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+nav > .navbar-header > a {
+    display: block;
+    height: inherit;
+}
+
+nav > .navbar-header > a > img {
+    height: inherit
+}
+
+nav > .navbar-items {
+    flex-grow: 1;
+    
+    display: flex;
+    flex-direction: column;
+    
+    gap: .5em;
+}
+
+.navbar-items > a {
+    padding: .3em .6em;
+    color: #211D2E;
+    font-size: 1.1em;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 6px;
+    
+    display: flex;
+    align-items: center;
+    gap: .8em;
+    transition: all .2s;
+}
+
+.navbar-items a:hover {
+    background-color: #E9E7EE;
+}
+
+.navbar-items a.selected {
+    background-color: #211D2E;
+    color: #F7F7FF;
+    font-weight: 400;
+}
+
+.navbar-items > a > svg {
+    height: 1.3em;
+}
+
+nav > .navbar-footer {
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+nav > .navbar-footer > button {
+    background-color: #211D2E;
+    color: #F7F7FF;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+main {
+    flex-grow: 1;
+    padding: 2em 4em;
+}
